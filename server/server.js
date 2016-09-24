@@ -85,7 +85,6 @@ app.get('/coupons', function (req, res) {
 });
 
 app.post('/scan-tag/:inventory', function (req, res) {
-	console.log(req.params.inventory, req.body.uid);
 	pg.connect(PSQL_STRING, function (error, client, done) {
 		if (error) {
 			console.error(error);
@@ -121,7 +120,6 @@ function addItemEvent(inventory) {
 	if (!inventoryPhoneSockets.has(inventory))
 		return;
 
-	console.log(2);
 	var socket = inventoryPhoneSockets.get(inventory);
 
 	pg.connect(PSQL_STRING, function (error, client, done) {
@@ -157,8 +155,6 @@ function addItemEvent(inventory) {
 						nextIndex++;
 					}
 				}
-
-				console.log('emitting!');
 
 				socket.emit('inventory update', {"products": products.map(function (obj) {
 					obj.info = JSON.parse(obj.info);
