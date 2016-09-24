@@ -19,36 +19,43 @@ app.get('/inventories/:id', function (req, res) {
 	pg.connect(PSQL_STRING, function (error, client, done) {
 		if (error) {
 			console.error(error);
+			res.status(500).send();
 			return;
 		}
 
-		client.query('SELECT DISTINCT p.id, p.name, p.info, p.location FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
 						+ ' INNER JOIN items it ON (it.product_id = p.id)'
 						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
-						+ ' WHERE iit.inventory_id = $1',
+						+ ' WHERE iit.inventory_id = $1'
+						+ ' ORDER BY iit.timestamp DESC',
 						[req.params.id],
 			function (error, q_products) {
 				done();
 				if (error) {
 					console.error(error);
+					res.status(500).send();
 					return;
 				}
 
-				client.query('SELECT it.id AS item_id, p.id AS product_id FROM products p'
-						+ ' INNER JOIN items it ON (it.product_id = p.id)'
-						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
-						+ ' WHERE iit.inventory_id = $1',
-							[req.params.id],
-					function (error, q_inventories) {
-						done();
-						if (error) {
-							console.error(error);
-							return;
-						}
+				var idIndices = new Map();
+				var nextIndex = 0;
+				var products = [];
 
-						res.status(200).send({"products": q_products.rows, "items": q_inventories.rows});
+				for (var i = 0; i < q_products.rows.length; i++) {
+					if (idIndices.has(q_products.rows[i].id)) {
+						products[idIndices.get(q_products.rows[i].id)].quantity++;
+					} else {
+						idIndices.set(q_products.rows[i].id, nextIndex)
+						products[nextIndex] = q_products.rows[i];
+						products[nextIndex].quantity = 1;
+						nextIndex++;
 					}
-				);
+				}
+
+				res.status(200).send({"products": products.map(function (obj) {
+					obj.info = JSON.parse(obj.info);
+					return obj;
+				})});
 			}
 		);
 	});	
@@ -58,6 +65,7 @@ app.get('/coupons', function (req, res) {
 	pg.connect(PSQL_STRING, function (error, client, done) {
 		if (error) {
 			console.error(error);
+			res.status(500).send();
 			return;
 		}
 
@@ -65,6 +73,7 @@ app.get('/coupons', function (req, res) {
 			done();
 			if (error) {
 				console.error(error);
+				res.status(500).send();
 				return;
 			}
 
@@ -73,9 +82,26 @@ app.get('/coupons', function (req, res) {
 	});
 });
 
-app.post('/scan-tag', function (req, res) {
-	console.log(req.body);
-	res.status(200).send();
+app.post('/scan-tag/:inventory', function (req, res) {
+	console.log(req.params.inventory, req.body.uid);
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			res.status(500).send();
+			return;
+		}
+
+		client.query('INSERT INTO inventory_items(inventory_id, item_id, timestamp) VALUES ($1, (SELECT id FROM items WHERE uid=$2), $3)', [req.params.inventory, req.body.uid, +new Date()], function (error, q_scan) {
+			done();
+			if (error) {
+				console.error(error);
+				res.status(500).send();
+				return;
+			}
+
+			res.status(200).send();
+		});
+	});
 });
 
 server.listen(6649, function () {
