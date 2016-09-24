@@ -100,7 +100,7 @@ app.post('/scan-tag/:inventory', function (req, res) {
 				return;
 			}
 
-			addItemEvent(parseInt(req.params.inventory));
+			addItemEvent(parseInt(req.params.inventory), uid);
 
 			res.status(200).send();
 		});
@@ -116,7 +116,7 @@ io.on('connection', function (socket) {
 	});
 });
 
-function addItemEvent(inventory) {
+function addItemEvent(inventory, uid) {
 	if (!inventoryPhoneSockets.has(inventory))
 		return;
 
@@ -128,42 +128,123 @@ function addItemEvent(inventory) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
-						+ ' INNER JOIN items it ON (it.product_id = p.id)'
-						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
-						+ ' WHERE iit.inventory_id = $1'
-						+ ' ORDER BY iit.timestamp DESC',
-						[inventory],
-			function (error, q_products) {
-				done();
-				if (error) {
-					console.error(error);
-					return;
-				}
-
-				var idIndices = new Map();
-				var nextIndex = 0;
-				var products = [];
-
-				for (var i = 0; i < q_products.rows.length; i++) {
-					if (idIndices.has(q_products.rows[i].id)) {
-						products[idIndices.get(q_products.rows[i].id)].quantity++;
-					} else {
-						idIndices.set(q_products.rows[i].id, nextIndex)
-						products[nextIndex] = q_products.rows[i];
-						products[nextIndex].quantity = 1;
-						nextIndex++;
-					}
-				}
-
-				socket.emit('inventory update', {"products": products.map(function (obj) {
-					obj.info = JSON.parse(obj.info);
-					return obj;
-				})});
-			}
-		);
+		sendInventoryUpdate(inventory);
+		createEvent("add item", JSON.stringify({
+			inventory: inventory,
+			item: uid
+		}));
 	});	
 };
+
+function sendInventoryUpdate(inventory) {
+	client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
+					+ ' INNER JOIN items it ON (it.product_id = p.id)'
+					+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
+					+ ' WHERE iit.inventory_id = $1'
+					+ ' ORDER BY iit.timestamp DESC',
+					[inventory],
+		function (error, q_products) {
+			done();
+			if (error) {
+				console.error(error);
+				return;
+			}
+
+			var idIndices = new Map();
+			var nextIndex = 0;
+			var products = [];
+
+			for (var i = 0; i < q_products.rows.length; i++) {
+				if (idIndices.has(q_products.rows[i].id)) {
+					products[idIndices.get(q_products.rows[i].id)].quantity++;
+				} else {
+					idIndices.set(q_products.rows[i].id, nextIndex)
+					products[nextIndex] = q_products.rows[i];
+					products[nextIndex].quantity = 1;
+					nextIndex++;
+				}
+			}
+
+			socket.emit('inventory update', {"products": products.map(function (obj) {
+				obj.info = JSON.parse(obj.info);
+				return obj;
+			})});
+		}
+	);
+}
+
+app.get('/events', function (req, res) {
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			res.status(500).send();
+			return;
+		}
+
+		client.query('SELECT * FROM events', function (error, q_events) {
+			done();
+			if (error) {
+				console.error(error);
+				res.status(500).send();
+				return;
+			}
+
+			res.status(200).send(q_events.rows);
+		});
+	});
+});
+
+app.get('/products', function (req, res) {
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			res.status(500).send();
+			return;
+		}
+
+		client.query('SELECT *, (SELECT COUNT(*) FROM items i WHERE i.product_id = p.id) FROM products p', function (error, q_products) {
+			done();
+			if (error) {
+				console.error(error);
+				res.status(500).send();
+				return;
+			}
+
+			res.status(200).send(q_products.rows.map(function (obj) {
+				obj.count = parseInt(obj.count);
+				obj.info = JSON.parse(obj.info);
+				return obj;
+			}));
+		});
+	});
+});
+
+function createEvent(type, data) {
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			return;
+		}
+
+		var timestamp = +new Date();
+
+		client.query('INSERT INTO events(timestamp, type, data) VALUES ($1, $2, $3)', [timestamp, type, data], function (error, q_insertion) {
+			done();
+			if (error) {
+				console.error(error);
+				return;
+			}
+
+			if (managerSocket !== null) {
+				managerSocket.emit('event', {
+					timestamp: timestamp,
+					type: type,
+					data: data
+				});
+			}
+		});
+	});
+}
 
 server.listen(6649, function () {
 	console.log('Server is running!');
