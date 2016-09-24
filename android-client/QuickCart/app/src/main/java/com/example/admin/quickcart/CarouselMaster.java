@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 
 /**
@@ -26,7 +26,7 @@ public class CarouselMaster extends FragmentActivity {
         viewPager.setAdapter(carouselAdapter);
     }
 
-    private class CarouselAdapter extends FragmentPagerAdapter {
+    private class CarouselAdapter extends FragmentStatePagerAdapter {
 
         public CarouselAdapter(FragmentManager fm) {
             super(fm);
