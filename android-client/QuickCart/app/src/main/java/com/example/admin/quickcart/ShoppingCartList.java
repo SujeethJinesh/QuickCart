@@ -26,9 +26,15 @@ import java.util.ArrayList;
 public class ShoppingCartList extends Fragment {
 
     View rootView;
-    ArrayList<String> items;
+    ArrayList<Item> itemsAll;
+    ArrayList<String> itemsNames;
     JSONArray jsonArray;
     JSONObject jsonObject;
+    private int id;
+    private String name;
+    private String description;
+    private double price;
+    private int quantity;
 
     @Nullable
     @Override
@@ -36,7 +42,8 @@ public class ShoppingCartList extends Fragment {
         super.onCreateView(inflater, container, savedInstanceState);
 
         rootView = inflater.inflate(R.layout.shopping_cart_list, container, false);
-        items = new ArrayList<>();
+        itemsAll = new ArrayList<>();
+        itemsNames = new ArrayList<>();
 
         new JSONRetriever(new OnTaskCompleted() {
             @Override
@@ -45,9 +52,14 @@ public class ShoppingCartList extends Fragment {
                 JSONArray jsonArray = jsonObject.getJSONArray("products");
                 for (int i = 0; i < jsonArray.length(); i++) {
                     try {
-                        Log.d("blah", jsonArray.getJSONObject(i).toString());
-                        Log.d("length of this is ", Integer.toString(jsonArray.length()));
-                        items.add(jsonArray.getJSONObject(i).toString());
+                        id = (Integer) jsonArray.getJSONObject(i).get("id");
+                        name = jsonArray.getJSONObject(i).get("name").toString();
+                        description = jsonArray.getJSONObject(i).getJSONObject("info").get("description").toString();
+                        price = Double.parseDouble(jsonArray.getJSONObject(i).get("price").toString());
+                        quantity = (Integer) jsonArray.getJSONObject(i).get("quantity");
+
+                        itemsNames.add(name);
+                        itemsAll.add(new Item(id, name, description, price, quantity));
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -55,8 +67,9 @@ public class ShoppingCartList extends Fragment {
 
 //        String[] filler = {"Pen", "Pencil"}; //Must fetch data from here
 
-                ListAdapter shoppingCartListAdapter = new ArrayAdapter<String>(getActivity().getApplicationContext(),
-                        android.R.layout.simple_expandable_list_item_1, items.toArray(new String[items.size()]));
+                ListAdapter shoppingCartListAdapter = new ArrayAdapter<>(getActivity().getBaseContext(),
+                        android.R.layout.simple_expandable_list_item_1,
+                        itemsNames.toArray(new String[itemsNames.size()]));
 
                 ListView shoppingCartListView = (ListView) rootView.findViewById(R.id.shopping_cart_listview);
                 shoppingCartListView.setAdapter(shoppingCartListAdapter);
@@ -65,7 +78,8 @@ public class ShoppingCartList extends Fragment {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                        startActivity(new Intent(getActivity().getApplicationContext(), ItemScreen.class).putStringArrayListExtra("parameters", items));
+                        startActivity(new Intent(getActivity().getApplicationContext(),
+                                ItemScreen.class).putExtra("items", itemsAll).putExtra("position", position));
                     }
                 });
             }
