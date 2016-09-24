@@ -9,10 +9,12 @@ app.use(bodyParser.urlencoded({
 	extended: true
 }));
 var server = require('http').Server(app);
-var io = socketIo(server);
+var io = socketIo.listen(server);
 
 var POSTGRES_CONFIG = config.get('postgres');
 var PSQL_STRING = 'postgres://' + POSTGRES_CONFIG.username + ':' + POSTGRES_CONFIG.password + '@' + POSTGRES_CONFIG.host + '/' + POSTGRES_CONFIG.database;
+
+var inventoryPhoneSockets = new Map();
 
 app.get('/inventories/:id', function (req, res) {
 	// TODO: authenticate
@@ -99,10 +101,73 @@ app.post('/scan-tag/:inventory', function (req, res) {
 				return;
 			}
 
+			addItemEvent(parseInt(req.params.inventory));
+
 			res.status(200).send();
 		});
 	});
 });
+
+io.on('connection', function (socket) {
+	var inventory = null;
+
+	socket.on('register inventory', function (data) {
+		inventory = data;
+		inventoryPhoneSockets.set(inventory, socket);
+	});
+});
+
+function addItemEvent(inventory) {
+	if (!inventoryPhoneSockets.has(inventory))
+		return;
+
+	console.log(2);
+	var socket = inventoryPhoneSockets.get(inventory);
+
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			return;
+		}
+
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
+						+ ' INNER JOIN items it ON (it.product_id = p.id)'
+						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
+						+ ' WHERE iit.inventory_id = $1'
+						+ ' ORDER BY iit.timestamp DESC',
+						[inventory],
+			function (error, q_products) {
+				done();
+				if (error) {
+					console.error(error);
+					return;
+				}
+
+				var idIndices = new Map();
+				var nextIndex = 0;
+				var products = [];
+
+				for (var i = 0; i < q_products.rows.length; i++) {
+					if (idIndices.has(q_products.rows[i].id)) {
+						products[idIndices.get(q_products.rows[i].id)].quantity++;
+					} else {
+						idIndices.set(q_products.rows[i].id, nextIndex)
+						products[nextIndex] = q_products.rows[i];
+						products[nextIndex].quantity = 1;
+						nextIndex++;
+					}
+				}
+
+				console.log('emitting!');
+
+				socket.emit('inventory update', {"products": products.map(function (obj) {
+					obj.info = JSON.parse(obj.info);
+					return obj;
+				})});
+			}
+		);
+	});	
+};
 
 server.listen(6649, function () {
 	console.log('Server is running!');
