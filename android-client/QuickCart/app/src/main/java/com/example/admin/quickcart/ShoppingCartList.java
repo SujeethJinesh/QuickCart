@@ -17,7 +17,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 
 
 /**
@@ -28,8 +33,6 @@ public class ShoppingCartList extends Fragment {
     View rootView;
     ArrayList<Item> itemsAll;
     ArrayList<String> itemsNames;
-    JSONArray jsonArray;
-    JSONObject jsonObject;
     private int id;
     private String name;
     private String description;
@@ -44,6 +47,35 @@ public class ShoppingCartList extends Fragment {
         rootView = inflater.inflate(R.layout.shopping_cart_list, container, false);
         itemsAll = new ArrayList<>();
         itemsNames = new ArrayList<>();
+//
+//        try {
+//            Log.d("made socket 1", "");
+//            final Socket socket = IO.socket("http://quickcart.me/"); //suspect the error is around here
+//            Log.d("made socket 2", "");
+//            socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
+//
+//                @Override
+//                public void call(Object... args) {
+//                    socket.emit("register inventory", 1);
+//                }
+//
+//            }).on("inventory update", new Emitter.Listener() {
+//
+//                @Override
+//                public void call(Object... args) {
+//                    Log.d("number of object args", "" + args.length);
+                    updateList();
+//                }
+//            });
+//            socket.connect();
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
+
+        return rootView;
+    }
+
+    private void updateList() {
 
         new JSONRetriever(new OnTaskCompleted() {
             @Override
@@ -65,8 +97,6 @@ public class ShoppingCartList extends Fragment {
                     }
                 }
 
-//        String[] filler = {"Pen", "Pencil"}; //Must fetch data from here
-
                 ListAdapter shoppingCartListAdapter = new ArrayAdapter<>(getActivity().getBaseContext(),
                         android.R.layout.simple_expandable_list_item_1,
                         itemsNames.toArray(new String[itemsNames.size()]));
@@ -84,8 +114,5 @@ public class ShoppingCartList extends Fragment {
                 });
             }
         }).execute("http://quickcart.me/inventories/1");
-
-        return rootView;
     }
-
 }
