@@ -1,0 +1,10 @@
+{
+  "name": "quickcart",
+  "version": "0.0.1",
+  "dependencies": {
+    "config": "^1.21.0",
+    "express": "^4.14.0",
+    "pg": "^6.1.0",
+    "socket.io": "^1.4.8"
+  }
+}
