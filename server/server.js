@@ -174,7 +174,7 @@ function sendInventoryUpdate(inventory, socket) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp, inv.name AS inv_name, inv.id AS inv_id FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp, (SELECT name AS inv_name FROM inventories WHERE id = iit.inventory_id), (SELECT id AS inv_id FROM inventories WHERE id = iit.inventory_id) FROM products p'
 					+ ' INNER JOIN items it ON (it.product_id = p.id)'
 					+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 					+ ' WHERE iit.inventory_id = $1'
