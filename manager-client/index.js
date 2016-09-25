@@ -43,6 +43,7 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 	scope = $scope;
 	$scope.view = 'now';
 	$scope.inventories = {};
+	$scope.activeInventory = -1;
 
 	$http({
 		method: 'GET',
@@ -107,5 +108,13 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 		}
 
 		return total;
+	};
+
+	$scope.setActiveInventory = function (id) {
+		if (id == $scope.activeInventory) {
+			$scope.activeInventory = -1;
+		} else {
+			$scope.activeInventory = id;
+		}
 	};
 });

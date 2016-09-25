@@ -47,9 +47,23 @@ html {
 	right: 50px;
 }
 
+.inventory-block-inner {
+	padding-top: 50px;
+}
+
+.details {
+	padding-top: 50px;
+	padding-left: 50px;
+}
+
+.inventory-block.active {
+
+}
+
 .name-block {
 	float: left;
 	font-size: 20pt;
+	cursor: pointer;
 }
 
 .inventory-name {

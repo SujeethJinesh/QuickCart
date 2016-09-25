@@ -25,12 +25,19 @@
 
 			<div class="right-panel">
 				<div ng-repeat="inventory in inventories">
-					<div ng-hide="inventory.products.length == 0">
-						<div class="name-block">
-							<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} items</span>
+					<div ng-class="(inventory.id === activeInventory ? 'active' : '')" ng-hide="inventory.products.length == 0">
+						<div class="inventory-block-inner">
+							<div class="name-block" ng-click="setActiveInventory(inventory.id)">
+								<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} item{{countItems(inventory.products) == 1? '': 's'}}</span>
+							</div>
+							<div class="total-price">
+								{{calculateTotal(inventory.products) | currency}}
+							</div>
 						</div>
-						<div class="total-price">
-							{{calculateTotal(inventory.products) | currency}}
+						<div class="details" ng-show="inventory.id === activeInventory">
+							<div ng-repeat="product in inventory.products">
+								{{product.name}} x{{product.quantity}} ({{product.quantity * product.price | currency}})
+							</div>
 						</div>
 					</div>
 				</div>

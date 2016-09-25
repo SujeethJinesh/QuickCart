@@ -26,7 +26,7 @@ app.get('/inventories/:id', function (req, res) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.location, p.price, iit.timestamp, inv.name as inv_name FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.location, p.price, iit.timestamp, inv.name AS inv_name, inv.id AS inv_id FROM products p'
 						+ ' INNER JOIN items it ON (it.product_id = p.id)'
 						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 						+ ' INNER JOIN inventories inv ON (iit.inventory_id = inv.id)'
@@ -56,16 +56,17 @@ app.get('/inventories/:id', function (req, res) {
 					}
 				}
 
-				var invName;
+				var invName, invId;
 				if (q_products.rows.length > 0) {
 					invName = q_products.rows[0].inv_name;
+					invId = q_products.rows[0].inv_id;
 				}
 
 				res.status(200).send({"products": products.map(function (obj) {
 					obj.info = JSON.parse(obj.info);
 					obj.inv_name = undefined;
 					return obj;
-				}), "name": invName});
+				}), "name": invName, "id": invId});
 			}
 		);
 	});	
@@ -159,7 +160,7 @@ function sendInventoryUpdate(inventory, socket) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp inv.name AS inv_name, inv.id AS inv_id FROM products p'
 					+ ' INNER JOIN items it ON (it.product_id = p.id)'
 					+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 					+ ' WHERE iit.inventory_id = $1'
@@ -187,10 +188,16 @@ function sendInventoryUpdate(inventory, socket) {
 				}
 			}
 
+			var invName, invId;
+			if (q_products.rows.length > 0) {
+				invName = q_products.rows[0].inv_name;
+				invId = q_products.rows[0].invId;
+			}
+
 			socket.emit('inventory update', {"products": products.map(function (obj) {
 				obj.info = JSON.parse(obj.info);
 				return obj;
-			})});
+			}), name: invName, id: invId});
 		});
 	});
 }
