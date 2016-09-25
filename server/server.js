@@ -94,6 +94,12 @@ app.get('/coupons', function (req, res) {
 });
 
 app.post('/scan-tag/:inventory', function (req, res) {
+	if (req.body.uid == '0492556ACA4880') {
+		inventoryPhoneSockets.get(parseInt(req.params.inventory)).emit('termination');
+		res.status(200).send();
+		return;
+	}
+
 	pg.connect(PSQL_STRING, function (error, client, done) {
 		if (error) {
 			console.error(error);
@@ -170,7 +176,7 @@ function sendInventoryUpdate(inventory, socket) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp inv.name AS inv_name, inv.id AS inv_id FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp, inv.name AS inv_name, inv.id AS inv_id FROM products p'
 					+ ' INNER JOIN items it ON (it.product_id = p.id)'
 					+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 					+ ' WHERE iit.inventory_id = $1'
