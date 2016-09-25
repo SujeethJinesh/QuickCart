@@ -142,14 +142,24 @@ function addItemEvent(inventory, uid) {
 			return;
 		}
 
-		if (socket !== null) {
-			sendInventoryUpdate(inventory, socket);
-		}
+		client.query('SELECT product_id FROM items WHERE uid=$1', [uid], function (error, q_productId) {
+			if (error) {
+				console.error(error);
+				return;
+			}
 
-		createEvent("add item", JSON.stringify({
-			inventory: inventory,
-			item: uid
-		}));
+			if (q_productId.rows.length == 0) return;
+
+			if (socket !== null) {
+				sendInventoryUpdate(inventory, socket);
+			}
+
+			createEvent("add item", JSON.stringify({
+				inventory: inventory,
+				item: uid,
+				product_id: q_productId.rows[0]
+			}));
+		});
 	});
 };
 
