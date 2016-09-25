@@ -43,7 +43,6 @@ html {
 	position: absolute;
 	width: 650px;
 	height: 800px;
-	border: 1px solid black;
 	bottom: 50px;
 	right: 50px;
 }
@@ -60,4 +59,5 @@ html {
 .total-price {
 	float: right;
 	font-size: 16pt;
+	color: #666;
 }

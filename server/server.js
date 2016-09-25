@@ -26,7 +26,7 @@ app.get('/inventories/:id', function (req, res) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp, inv.name as inv_name FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.location, p.price, iit.timestamp, inv.name as inv_name FROM products p'
 						+ ' INNER JOIN items it ON (it.product_id = p.id)'
 						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 						+ ' INNER JOIN inventories inv ON (iit.inventory_id = inv.id)'
@@ -130,10 +130,10 @@ io.on('connection', function (socket) {
 
 function addItemEvent(inventory, uid) {
 	console.log('add item', inventory, uid);
-	if (!inventoryPhoneSockets.has(inventory))
-		return;
-
-	var socket = inventoryPhoneSockets.get(inventory);
+	var socket = null;
+	if (inventoryPhoneSockets.has(inventory)) {
+		socket = inventoryPhoneSockets.get(inventory);
+	}
 
 	pg.connect(PSQL_STRING, function (error, client, done) {
 		if (error) {
@@ -141,7 +141,10 @@ function addItemEvent(inventory, uid) {
 			return;
 		}
 
-		sendInventoryUpdate(inventory, socket);
+		if (socket !== null) {
+			sendInventoryUpdate(inventory, socket);
+		}
+
 		createEvent("add item", JSON.stringify({
 			inventory: inventory,
 			item: uid

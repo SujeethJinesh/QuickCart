@@ -1,5 +1,8 @@
 var quickCartManagerApp = angular.module('QuickCartManager', []);
 
+var lastPositions = {};
+var pathfindingMapScalingFactor = 5;
+
 window.onload = function () {
 	var pathfindingMapCanvas = document.getElementById('pathfindingMapCanvas');
 	var pathfindingMapContext = pathfindingMapCanvas.getContext('2d');
@@ -7,7 +10,33 @@ window.onload = function () {
 
 	var mainMapCanvas = document.getElementById('mainMapCanvas');
 	var mainMapContext = mainMapCanvas.getContext('2d');
-	mainMapContext.drawImage(document.getElementById('mainMapImage'), 0, 0);
+	var mainMapImage = document.getElementById('mainMapImage');
+
+	var renderMainCanvas = function () {
+		mainMapContext.drawImage(mainMapImage, 0, 0);
+
+		for (let ind in lastPositions) {
+			let x = pathfindingMapScalingFactor * lastPositions[ind][0];
+			let y = pathfindingMapScalingFactor * lastPositions[ind][1];
+
+			mainMapContext.fillStyle = 'black';
+
+			mainMapContext.beginPath();
+			mainMapContext.arc(x, y, 11, 0, 2 * Math.PI);
+			mainMapContext.fill();
+
+			let hue = 61 * ind % 360;
+			mainMapContext.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
+
+			mainMapContext.beginPath();
+			mainMapContext.arc(x, y, 10, 0, 2 * Math.PI);
+			mainMapContext.fill();
+		}
+
+		window.requestAnimationFrame(renderMainCanvas);
+	};
+
+	renderMainCanvas();
 };
 
 quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
@@ -55,8 +84,10 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 			url: '/inventories/' + inventory
 		}).then(function (response2) {
 			$scope.inventories[inventory] = response2.data;
+			if (response2.data.products.length > 0)
+				lastPositions[inventory] = response2.data.products[0].location.split(',').map((s) => parseInt(s));
 			if (apply)
-				$scope.$apply();
+				window.setTimeout(function () {$scope.$apply()}, 0);
 		}, function () {});
 	}
 

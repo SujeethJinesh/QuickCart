@@ -25,11 +25,13 @@
 
 			<div class="right-panel">
 				<div ng-repeat="inventory in inventories">
-					<div class="name-block">
-						<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} items</span>
-					</div>
-					<div class="total-price">
-						{{calculateTotal(inventory.products) | currency}}
+					<div ng-hide="inventory.products.length == 0">
+						<div class="name-block">
+							<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} items</span>
+						</div>
+						<div class="total-price">
+							{{calculateTotal(inventory.products) | currency}}
+						</div>
 					</div>
 				</div>
 			</div>
