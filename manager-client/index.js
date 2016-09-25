@@ -254,8 +254,57 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 		return 'hsl(' + hue + ', 100%, 25%)';
 	};
 
+	var barData = [
+		[],
+		[30, 40, 33, 60, 14],
+		[4, 24, 10, 34, 90],
+		[50, 47, 32, 50, 48],
+		[71, 43, 20, 32, 6],
+		[40, 33, 60, 14, 31],
+		[41, 40, 13, 20, 64],
+		[33, 40, 33, 6, 4],
+		[55, 41, 67, 12, 33],
+		[22, 49, 4, 4, 34],
+		[25, 42, 53, 61, 56]
+	]
+
 	$scope.setActiveProduct = function (product) {
 		$scope.activeProduct = product;
 		$scope.view = 'products';
+
+		document.getElementById('chartContainer').innerHTML = '<canvas id="chartCanvas" width="800" height="400"></canvas>';
+
+		new Chart(document.getElementById('chartCanvas').getContext('2d'), {
+			type: 'bar',
+			data: {
+				labels: ['0-1 minute', '1-3 minutes', '3-5 minutes', '5-10 minutes', '10+ minutes'],
+				datasets: [
+					{
+						label: 'Number of customers',
+						backgroundColor: [
+			                'rgba(255, 99, 132, 0.2)',
+			                'rgba(54, 162, 235, 0.2)',
+			                'rgba(255, 206, 86, 0.2)',
+			                'rgba(75, 192, 192, 0.2)',
+			                'rgba(153, 102, 255, 0.2)',
+			                'rgba(255, 159, 64, 0.2)'
+			            ],
+			            borderColor: [
+			                'rgba(255,99,132,1)',
+			                'rgba(54, 162, 235, 1)',
+			                'rgba(255, 206, 86, 1)',
+			                'rgba(75, 192, 192, 1)',
+			                'rgba(153, 102, 255, 1)',
+			                'rgba(255, 159, 64, 1)'
+			            ],
+			            borderWidth: 1,
+						data: barData[product.id]
+					}
+				]
+			},
+			options: {
+				responsive: false
+			}
+		})
 	}
 });

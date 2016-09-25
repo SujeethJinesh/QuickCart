@@ -64,7 +64,11 @@
 					{{activeProduct.name}}
 				</div>
 				<div class="active-product-price">
-					{{activeProduct.price}}
+					{{activeProduct.price | currency}}
+				</div>
+				<div class="chart" id="chartContainer">
+					<canvas id="chartCanvas" width="800" height="400">
+					</canvas>
 				</div>
 			</div>
 		</div>
