@@ -75,3 +75,48 @@ html {
 	font-size: 16pt;
 	color: #666;
 }
+
+.product-container {
+	top: 150px;
+	left: 50px;
+	position: absolute;
+}
+
+.search-bar {
+	width: 800px;
+}
+
+.product-name-container {
+	font-size: 16pt;
+	margin: 20px 10px 0px 50px;
+}
+
+.product-name-container div {
+	cursor: pointer;
+}
+
+.back-button {
+	cursor: pointer;
+	background-color: #ddd;
+	padding: 20px;
+	margin: 10px;
+}
+
+.back-button:hover {
+	background-color: #eee;
+}
+
+.details div {
+	cursor: pointer;
+}
+
+.active-product-name {
+	margin-left: 20px;
+	font-size: 18pt;
+}
+
+.active-product-price {
+	margin-left: 20px;
+	font-size: 14pt;
+	color: #444;
+}

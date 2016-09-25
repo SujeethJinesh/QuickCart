@@ -4,6 +4,7 @@
 	<head>
 		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
 		<script src="http://quickcart.me/socket.io/socket.io.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.3.0/Chart.bundle.min.js"></script>
 		<script src="pathfinding-browser.min.js"></script>
 		<script src="index.js"></script>
 
@@ -27,7 +28,7 @@
 			<div class="right-panel">
 				<div ng-repeat="inventory in inventories">
 					<div ng-class="(inventory.id === getActiveInventory() ? 'active' : '')" ng-hide="inventory.products.length == 0">
-						<div class="inventory-block-inner">
+						<div class="inventory-block-inner" ng-style="{'color': textColor(inventory.id)}">
 							<div class="name-block" ng-click="setActiveInventory(inventory.id)">
 								<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} item{{countItems(inventory.products) == 1? '': 's'}}</span>
 							</div>
@@ -36,7 +37,7 @@
 							</div>
 						</div>
 						<div class="details" ng-show="inventory.id === getActiveInventory()">
-							<div ng-repeat="product in inventory.products">
+							<div ng-repeat="product in inventory.products" ng-click="setActiveProduct(product)">
 								{{product.name}} x{{product.quantity}} ({{product.quantity * product.price | currency}})
 							</div>
 						</div>
@@ -45,7 +46,27 @@
 			</div>
 		</div>
 
-		<div ng-show="view == 'products'">
+		<div ng-show="view == 'products'" class="product-container">
+			<div ng-show="activeProduct === null">
+				<input class="search-bar" ng-model="productFilter">
+				<div>
+					<div ng-repeat="product in products" class="product-name-container">
+						<div ng-show="productFilter === '' || inSearch(product.name, productFilter)" ng-click="setActiveProduct(product)">
+							{{product.name}}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div ng-show="activeProduct !== null">
+				<div ng-click="activeProduct = null" class='back-button'>Back</div>
+				<div class="active-product-name">
+					{{activeProduct.name}}
+				</div>
+				<div class="active-product-price">
+					{{activeProduct.price}}
+				</div>
+			</div>
 		</div>
 	</body>
 </html>

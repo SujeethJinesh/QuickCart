@@ -62,7 +62,7 @@ window.onload = function () {
 		mainMapContext.arc(x, y, 11, 0, 2 * Math.PI);
 		mainMapContext.fill();
 
-		let hue = 61 * ind % 360;
+		let hue = (124 * ind + 45) % 360;
 		mainMapContext.fillStyle = 'hsl(' + hue + ', 100%, 50%)';
 
 		mainMapContext.beginPath();
@@ -131,13 +131,11 @@ function prePathfind () {
 	path = path.filter((event) => event.type === 'add item');
 
 	for (let waypoint of path) {
-		console.log(getLoc(waypoint.data.product_id.product_id));
 		pathfindTo(waypoint.data.inventory, getLoc(waypoint.data.product_id.product_id).split(',').map((n) => parseInt(n)));
 	}
 }
 
 function pathfindTo (inventory, waypointDestination) {
-	console.log(inventory);
 	if (pathSoFar[inventory] === undefined) {
 		pathSoFar[inventory] = [startLocation];
 	}
@@ -160,6 +158,8 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 	scope = $scope;
 	$scope.view = 'now';
 	$scope.inventories = {};
+
+	$scope.activeProduct = null;
 
 	$http({
 		method: 'GET',
@@ -190,7 +190,7 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 
 			socket.on('event', function (data) {
 				$scope.events.push(data);
-				fetchInventory(data.data.inventory, true);
+				fetchInventory(data.data.inventory);
 				if (data.type === 'add item') {
 					pathfindTo(data.data.inventory, getLoc(data.data.product_id.product_id).split(',').map((n) => parseInt(n)));
 				}
@@ -208,8 +208,6 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 			$scope.inventories[inventory] = response2.data;
 			if (response2.data.products.length > 0)
 				lastPositions[inventory] = response2.data.products[0].location.split(',').map((s) => parseInt(s));
-			if (apply)
-				window.setTimeout(function () {$scope.$apply()}, 0);
 		}, function () {});
 	}
 
@@ -241,5 +239,23 @@ quickCartManagerApp.controller('QuickCartController', function ($scope, $http) {
 
 	$scope.getActiveInventory = function () {
 		return activeInventory;
+	};
+
+	$scope.inSearch = function (name, search) {
+		if (name.search(new RegExp(search, 'i')) != -1) {
+			return true;
+		} else {
+			return false;
+		}
+	};
+
+	$scope.textColor = function (id) {
+		let hue = (124 * id + 45) % 360;
+		return 'hsl(' + hue + ', 100%, 25%)';
+	};
+
+	$scope.setActiveProduct = function (product) {
+		$scope.activeProduct = product;
+		$scope.view = 'products';
 	}
 });
