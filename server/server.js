@@ -15,6 +15,7 @@ var POSTGRES_CONFIG = config.get('postgres');
 var PSQL_STRING = 'postgres://' + POSTGRES_CONFIG.username + ':' + POSTGRES_CONFIG.password + '@' + POSTGRES_CONFIG.host + '/' + POSTGRES_CONFIG.database;
 
 var inventoryPhoneSockets = new Map();
+var managerSocket = null;
 
 app.get('/inventories/:id', function (req, res) {
 	// TODO: authenticate
@@ -25,9 +26,10 @@ app.get('/inventories/:id', function (req, res) {
 			return;
 		}
 
-		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp, inv.name as inv_name FROM products p'
 						+ ' INNER JOIN items it ON (it.product_id = p.id)'
 						+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
+						+ ' INNER JOIN inventories inv ON (iit.inventory_id = inv.id)'
 						+ ' WHERE iit.inventory_id = $1'
 						+ ' ORDER BY iit.timestamp DESC',
 						[req.params.id],
@@ -54,10 +56,16 @@ app.get('/inventories/:id', function (req, res) {
 					}
 				}
 
+				var invName;
+				if (q_products.rows.length > 0) {
+					invName = q_products.rows[0].inv_name;
+				}
+
 				res.status(200).send({"products": products.map(function (obj) {
 					obj.info = JSON.parse(obj.info);
+					obj.inv_name = undefined;
 					return obj;
-				})});
+				}), "name": invName});
 			}
 		);
 	});	
@@ -100,7 +108,7 @@ app.post('/scan-tag/:inventory', function (req, res) {
 				return;
 			}
 
-			addItemEvent(parseInt(req.params.inventory), uid);
+			addItemEvent(parseInt(req.params.inventory), req.body.uid);
 
 			res.status(200).send();
 		});
@@ -114,9 +122,14 @@ io.on('connection', function (socket) {
 		inventory = data;
 		inventoryPhoneSockets.set(inventory, socket);
 	});
+
+	socket.on('register as manager', function () {
+		managerSocket = socket;
+	})
 });
 
 function addItemEvent(inventory, uid) {
+	console.log('add item', inventory, uid);
 	if (!inventoryPhoneSockets.has(inventory))
 		return;
 
@@ -128,16 +141,22 @@ function addItemEvent(inventory, uid) {
 			return;
 		}
 
-		sendInventoryUpdate(inventory);
+		sendInventoryUpdate(inventory, socket);
 		createEvent("add item", JSON.stringify({
 			inventory: inventory,
 			item: uid
 		}));
-	});	
+	});
 };
 
-function sendInventoryUpdate(inventory) {
-	client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
+function sendInventoryUpdate(inventory, socket) {
+	pg.connect(PSQL_STRING, function (error, client, done) {
+		if (error) {
+			console.error(error);
+			return;
+		}
+
+		client.query('SELECT p.id, p.name, p.info, p.price, iit.timestamp FROM products p'
 					+ ' INNER JOIN items it ON (it.product_id = p.id)'
 					+ ' INNER JOIN inventory_items iit ON (iit.item_id = it.id)'
 					+ ' WHERE iit.inventory_id = $1'
@@ -169,8 +188,8 @@ function sendInventoryUpdate(inventory) {
 				obj.info = JSON.parse(obj.info);
 				return obj;
 			})});
-		}
-	);
+		});
+	});
 }
 
 app.get('/events', function (req, res) {
@@ -181,7 +200,7 @@ app.get('/events', function (req, res) {
 			return;
 		}
 
-		client.query('SELECT * FROM events', function (error, q_events) {
+		client.query('SELECT timestamp, type, data FROM events', function (error, q_events) {
 			done();
 			if (error) {
 				console.error(error);
@@ -189,7 +208,10 @@ app.get('/events', function (req, res) {
 				return;
 			}
 
-			res.status(200).send(q_events.rows);
+			res.status(200).send({events: q_events.rows.map(function (obj) {
+				obj.data = JSON.parse(obj.data);
+				return obj;
+			})});
 		});
 	});
 });
@@ -210,11 +232,11 @@ app.get('/products', function (req, res) {
 				return;
 			}
 
-			res.status(200).send(q_products.rows.map(function (obj) {
+			res.status(200).send({products: q_products.rows.map(function (obj) {
 				obj.count = parseInt(obj.count);
 				obj.info = JSON.parse(obj.info);
 				return obj;
-			}));
+			})});
 		});
 	});
 });
@@ -239,7 +261,7 @@ function createEvent(type, data) {
 				managerSocket.emit('event', {
 					timestamp: timestamp,
 					type: type,
-					data: data
+					data: JSON.parse(data)
 				});
 			}
 		});

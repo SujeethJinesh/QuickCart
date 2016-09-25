@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+
+<html lang="en" ng-app="QuickCartManager">
+	<head>
+		<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+		<script src="http://quickcart.me/socket.io/socket.io.js"></script>
+		<script src="index.js"></script>
+
+		<link rel="stylesheet" type="text/css" href="index.css">
+	</head>
+
+	<body ng-controller="QuickCartController">
+		<header>
+			<nav>
+				<a href="#" ng-class="'link now-link' + (view == 'now' ? ' active' : '')" ng-click="view = 'now'">Now</a>
+				<a href="#" ng-class="'link products-link' + (view == 'products' ? ' active' : '')" ng-click="view = 'products'">Products</a>
+			</nav>
+		</header>
+
+		<div ng-show="view == 'now'">
+			<canvas id="mainMapCanvas" width="1000" height="800" class="main-map"></canvas>
+			<canvas id="pathfindingMapCanvas" width="1000" height="800" class="hidden-canvas"></canvas>
+			<img id="mainMapImage" src="pretty-map.png" class="hidden-image">
+			<img id="pathfindingMapImage" src="pathfinding-map.png" class="hidden-image">
+
+			<div class="right-panel">
+				<div ng-repeat="inventory in inventories">
+					<div class="name-block">
+						<span class="inventory-name">{{inventory.name}}</span> - <span class="item-count">{{countItems(inventory.products)}} items</span>
+					</div>
+					<div class="total-price">
+						{{calculateTotal(inventory.products) | currency}}
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div ng-show="view == 'products'">
+		</div>
+	</body>
+</html>
